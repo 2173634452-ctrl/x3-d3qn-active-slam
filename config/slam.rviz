@@ -1,0 +1,69 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Plane: XY
+      Cell Size: 1
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Sparse map
+      Enabled: true
+      Topic:
+        Value: /slam/map_points
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+      Style: Points
+      Size (Pixels): 3
+      Color Transformer: AxisColor
+      Position Transformer: XYZ
+    - Class: rviz_default_plugins/Path
+      Name: Online camera trajectory
+      Enabled: true
+      Topic:
+        Value: /slam/path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+      Color: 0; 220; 255
+      Line Style: Lines
+    - Class: rviz_default_plugins/Path
+      Name: Optimized keyframes
+      Enabled: true
+      Topic:
+        Value: /slam/keyframes
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+      Color: 255; 170; 0
+      Line Style: Lines
+    - Class: rviz_default_plugins/TF
+      Name: Robot and camera frames
+      Enabled: true
+      Show Names: true
+  Global Options:
+    Fixed Frame: slam_map
+    Background Color: 35; 35; 40
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 5
+      Pitch: 0.65
+      Yaw: 0.8
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+Window Geometry:
+  Width: 1100
+  Height: 800

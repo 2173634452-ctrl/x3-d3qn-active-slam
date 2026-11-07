@@ -1,0 +1,441 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version="1.9">
+  <model name="rosmaster_x3">
+    <link name="base_footprint">
+      <inertial>
+        <pose>0.007792741758939624 0.0001156041409089626 0.08310865060182154 0 0 0</pose>
+        <mass>0.54460976538761552</mass>
+        <inertia>
+          <ixx>0.0029058027734059529</ixx>
+          <ixy>-7.3715613398325746e-07</ixy>
+          <ixz>-9.9731386222496189e-06</ixz>
+          <iyy>0.0055825732728057098</iyy>
+          <iyz>-3.6011854106994372e-06</iyz>
+          <izz>0.0050328420590643368</izz>
+        </inertia>
+      </inertial>
+      <collision name="base_footprint_fixed_joint_lump__base_link_collision">
+        <pose>0 0 0.0815 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.25 0.2 0.08</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode />
+          </contact>
+          <friction>
+            <ode />
+          </friction>
+        </surface>
+      </collision>
+      <collision name="base_footprint_fixed_joint_lump__camera_link_collision_1">
+        <pose>0.057105 1.7948e-05 0.11905 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.025 0.05 0.02</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode />
+          </contact>
+          <friction>
+            <ode />
+          </friction>
+        </surface>
+      </collision>
+      <collision name="base_footprint_fixed_joint_lump__laser_link_collision_2">
+        <pose>0.0435 5.25826986680105e-05 0.1915 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.035000000000000003</length>
+            <radius>0.025000000000000001</radius>
+          </cylinder>
+        </geometry>
+        <surface>
+          <contact>
+            <ode />
+          </contact>
+          <friction>
+            <ode />
+          </friction>
+        </surface>
+      </collision>
+      <visual name="base_footprint_fixed_joint_lump__base_link_visual">
+        <pose>0 0 0.0815 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/workspace/x3-slam/third_party/x3-robodog2/meshes/mecanum/base_link_X3.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Green</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <diffuse>0 0.875 0 1</diffuse>
+          <ambient>0 0.875 0 1</ambient>
+        </material>
+      </visual>
+      <visual name="base_footprint_fixed_joint_lump__camera_link_visual_1">
+        <pose>0.057105 1.7948e-05 0.11905 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/workspace/x3-slam/third_party/x3-robodog2/meshes/sensor/camera_link.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.875 0.875 0.875 1</diffuse>
+          <ambient>0.875 0.875 0.875 1</ambient>
+        </material>
+      </visual>
+      <visual name="base_footprint_fixed_joint_lump__laser_link_visual_2">
+        <pose>0.0435 5.25826986680105e-05 0.1915 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/workspace/x3-slam/third_party/x3-robodog2/meshes/sensor/laser_link.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/FlatBlack</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <diffuse>0.875 0.875 0.875 1</diffuse>
+          <ambient>0.875 0.875 0.875 1</ambient>
+        </material>
+      </visual>
+      <sensor name="x3_rgbd" type="rgbd_camera">
+        <always_on>true</always_on>
+        <update_rate>15</update_rate>
+        <visualize>false</visualize>
+        <topic>/x3/rgbd</topic>
+        <camera>
+          <horizontal_fov>1.0471975512</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.050000000000000003</near>
+            <far>12</far>
+          </clip>
+          <camera_info_topic>/x3/rgbd/camera_info</camera_info_topic>
+        </camera>
+        <pose>0.057105 1.7948e-05 0.11905 0 -0 0</pose>
+      </sensor>
+    </link>
+    <joint name="back_left_joint" type="revolute">
+      <pose relative_to="base_footprint">-0.08 0.084492 0.04196 1.5703 0 0</pose>
+      <parent>base_footprint</parent>
+      <child>back_left_wheel</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <effort>100</effort>
+          <velocity>1</velocity>
+          <lower>-10000000000000000</lower>
+          <upper>10000000000000000</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name="back_left_wheel">
+      <pose relative_to="back_left_joint">0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>-4.01213085227115e-07 2.04910264598596e-06 0.000590775697051377 0 0 0</pose>
+        <mass>0.051530929935702803</mass>
+        <inertia>
+          <ixx>1.45942986129926e-05</ixx>
+          <ixy>-3.1978721539809302e-10</ixy>
+          <ixz>1.74943062058915e-09</ixz>
+          <iyy>1.45948727598913e-05</iyy>
+          <iyz>1.6176981211004901e-10</iyz>
+          <izz>2.4263683888153002e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="back_left_wheel_collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.033000000000000002</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <contact>
+            <ode />
+          </contact>
+          <friction>
+            <ode>
+              <mu2>0</mu2>
+              <fdir1>1 0 1</fdir1>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="back_left_wheel_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/workspace/x3-slam/third_party/x3-robodog2/meshes/mecanum/back_left_wheel_X3.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/DarkGrey</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <diffuse>0.875 0.875 0.875 1</diffuse>
+          <ambient>0.875 0.875 0.875 1</ambient>
+        </material>
+      </visual>
+      <mu>1.0</mu>
+    </link>
+    <joint name="back_right_joint" type="revolute">
+      <pose relative_to="base_footprint">-0.08 -0.08450000000000001 0.04204 -1.57 0 3.14159</pose>
+      <parent>base_footprint</parent>
+      <child>back_right_wheel</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <effort>100</effort>
+          <velocity>1</velocity>
+          <lower>-10000000000000000</lower>
+          <upper>10000000000000000</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name="back_right_wheel">
+      <pose relative_to="back_right_joint">0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>-1.75924169923403e-06 1.28388821071107e-06 -0.000590549296238266 0 0 0</pose>
+        <mass>0.051540174053366</mass>
+        <inertia>
+          <ixx>1.4597415225000201e-05</ixx>
+          <ixy>1.9485055917839701e-10</ixy>
+          <ixz>-1.61846387282284e-09</ixz>
+          <iyy>1.4596501955693e-05</iyy>
+          <iyz>-6.2790405742381801e-10</iyz>
+          <izz>2.4266309138045099e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="back_right_wheel_collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.033000000000000002</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <contact>
+            <ode />
+          </contact>
+          <friction>
+            <ode>
+              <mu2>0</mu2>
+              <fdir1>-1 0 1</fdir1>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="back_right_wheel_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/workspace/x3-slam/third_party/x3-robodog2/meshes/mecanum/back_right_wheel_X3.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/DarkGrey</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <diffuse>0.875 0.875 0.875 1</diffuse>
+          <ambient>0.875 0.875 0.875 1</ambient>
+        </material>
+      </visual>
+      <mu>1.0</mu>
+    </link>
+    <joint name="front_left_joint" type="revolute">
+      <pose relative_to="base_footprint">0.08 0.084492 0.04260000000000001 1.5703 0 0</pose>
+      <parent>base_footprint</parent>
+      <child>front_left_wheel</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <effort>100</effort>
+          <velocity>1</velocity>
+          <lower>-10000000000000000</lower>
+          <upper>10000000000000000</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name="front_left_wheel">
+      <pose relative_to="front_left_joint">0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>2.3728e-06 -9.4228e-07 0.00064068 0 0 0</pose>
+        <mass>0.051542999999999999</mass>
+        <inertia>
+          <ixx>1.4596999999999999e-05</ixx>
+          <ixy>-4.7945000000000003e-10</ixy>
+          <ixz>-2.4786000000000001e-10</ixz>
+          <iyy>1.4598e-05</iyy>
+          <iyz>1.7972e-09</iyz>
+          <izz>2.4267e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="front_left_wheel_collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.033000000000000002</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <contact>
+            <ode />
+          </contact>
+          <friction>
+            <ode>
+              <mu2>0</mu2>
+              <fdir1>1 0 -1</fdir1>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="front_left_wheel_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/workspace/x3-slam/third_party/x3-robodog2/meshes/mecanum/front_left_wheel_X3.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/DarkGrey</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <diffuse>0.875 0.875 0.875 1</diffuse>
+          <ambient>0.875 0.875 0.875 1</ambient>
+        </material>
+      </visual>
+      <mu>1.0</mu>
+    </link>
+    <joint name="front_right_joint" type="revolute">
+      <pose relative_to="base_footprint">0.08 -0.08450000000000001 0.04260000000000001 -1.5703 0 3.14159</pose>
+      <parent>base_footprint</parent>
+      <child>front_right_wheel</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <effort>100</effort>
+          <velocity>1</velocity>
+          <lower>-10000000000000000</lower>
+          <upper>10000000000000000</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name="front_right_wheel">
+      <pose relative_to="front_right_joint">0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>1.9051e-06 -2.3183e-07 -0.00064079 0 0 0</pose>
+        <mass>0.051532000000000001</mass>
+        <inertia>
+          <ixx>1.4595e-05</ixx>
+          <ixy>-4.3975000000000001e-10</ixy>
+          <ixz>4.4149999999999997e-10</ixz>
+          <iyy>1.4594e-05</iyy>
+          <iyz>-1.7476e-09</iyz>
+          <izz>2.4264e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="front_right_wheel_collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.033000000000000002</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <contact>
+            <ode />
+          </contact>
+          <friction>
+            <ode>
+              <mu2>0</mu2>
+              <fdir1>-1 0 -1</fdir1>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="front_right_wheel_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/workspace/x3-slam/third_party/x3-robodog2/meshes/mecanum/front_right_wheel_X3.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/DarkGrey</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <diffuse>0.875 0.875 0.875 1</diffuse>
+          <ambient>0.875 0.875 0.875 1</ambient>
+        </material>
+      </visual>
+      <mu>1.0</mu>
+    </link>
+    <plugin name="ignition::gazebo::systems::VelocityControl" filename="ignition-gazebo-velocity-control-system" />
+    <plugin name="ignition::gazebo::systems::OdometryPublisher" filename="ignition-gazebo-odometry-publisher-system">
+      <odom_frame>odom</odom_frame>
+      <robot_base_frame>base_footprint</robot_base_frame>
+      <odom_topic>odom</odom_topic>
+      <tf_topic>tf</tf_topic>
+      <odom_publish_frequency>10</odom_publish_frequency>
+      <dimensions>2</dimensions>
+    </plugin>
+    <frame name="base_imu" attached_to="base_link">
+      <pose>-0.06 0.01 0.01 3.14159 9.3e-05 -1.57089</pose>
+    </frame>
+    <frame name="imu_link" attached_to="base_imu" />
+    <frame name="camera_joint" attached_to="base_link">
+      <pose>0.057105 1.8e-05 0.03755 0 -0 0</pose>
+    </frame>
+    <frame name="camera_link" attached_to="camera_joint" />
+    <frame name="laser_joint" attached_to="base_link">
+      <pose>0.0435 5.3e-05 0.11 0 -0 0</pose>
+    </frame>
+    <frame name="laser_link" attached_to="laser_joint" />
+    <frame name="base_joint" attached_to="base_footprint">
+      <pose>0 0 0.0815 0 -0 0</pose>
+    </frame>
+    <frame name="base_link" attached_to="base_joint" />
+    <pose>-4.5 -0.5 0.04 0 0 0</pose>
+  </model>
+</sdf>

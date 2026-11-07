@@ -85,6 +85,18 @@ bash scripts/container.sh python3 learning/train_offline.py \
 
 统一入口现已默认启用每2500次更新的独立仿真验证、初始与中间检查点保留、训练后四组策略对照，以及 `monitor/index.html` 曲线报告。记录 loss、TD 误差、Q 值、梯度，展示独立评估回报、面积、导航成功率和中断次数。验证会增加流程耗时；不会用 loss 下降或更新次数宣称收敛。具体运行方式、统计口径和最佳模型选择见 [评估说明](docs/evaluation.md)。
 
+## 分轮采集与训练
+
+`learning/iterate.py` 可接续现有模型，执行两轮有界迭代：先训练并保留初始/中间/最终模型，测量这些模型的仿真成绩，然后用所选模型带35%随机探索采集新数据，合并旧数据并训练第二轮。默认每轮10000次更新、每5000次保留一个模型、每个模型3次短程仿真；采集默认2实例，各250条、每实例上限2小时。参数更新很快，检查点测量在随后进行；不会为了等待仿真暂停尚未完成的梯度更新。
+
+```bash
+bash scripts/container.sh timeout --signal=INT --kill-after=30s 21600s \
+  python3 learning/iterate.py --dataset /results/run_001/transitions.jsonl \
+  --resume /results/run_001/offline/d3qn_offline.pt --output /results/iteration_001
+```
+
+进度记录在 `iteration.json`，页面为 `monitor/index.html`，各轮选择结果保留在 `round_*/selection.json`。采集时不更新参数，所有新转移记录行为策略及模型哈希；没有新有效数据就不重复训练同一数据集。模型选择优先使用没有提前中断的检查点；若全有中断则按回报回退选择并明确标记。全部原始成绩保留，不以模型选择结果宣称收敛。此流程不自动启动 HTTP 服务，不保存录像。
+
 ## 当前边界
 
 - 固定数据训练属于 D3QN 预训练，没有 CQL 等保守离线 RL 机制；训练损失下降不等于探索能力收敛。

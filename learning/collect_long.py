@@ -1,5 +1,5 @@
 """Bounded long collection with per-episode recovery and durable transitions."""
-import argparse,json,sys,time,traceback
+import argparse,json,sys,time,traceback,hashlib
 from pathlib import Path
 import numpy as np
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'exploration'))
@@ -11,11 +11,24 @@ p.add_argument('--actor',type=int,required=True)
 p.add_argument('--target-samples',type=int,default=250)
 p.add_argument('--max-hours',type=float,default=8)
 p.add_argument('--steps',type=int,default=20)
+p.add_argument('--checkpoint',type=Path,help='Collect with epsilon-greedy D3QN instead of the heuristic')
+p.add_argument('--epsilon',type=float,default=.35)
 a=p.parse_args()
+if not 0<=a.epsilon<=1:
+    p.error('epsilon must be between zero and one')
+net=None
+if a.checkpoint:
+    import torch
+    from d3qn import DuelingQ
+    torch.set_num_threads(1)
+    net=DuelingQ().eval()
+    net.load_state_dict(torch.load(a.checkpoint,map_location='cpu',weights_only=True)['policy'])
 a.output.mkdir(parents=True,exist_ok=True)
 rng=np.random.default_rng(7000+a.actor)
 report=dict(actor=a.actor,phase='collection',network_updates=0,samples=0,attempts=0,
-    target_samples=a.target_samples,episodes=[],errors=[],shutdowns=[])
+    target_samples=a.target_samples,episodes=[],errors=[],shutdowns=[],
+    behavior='d3qn_epsilon_greedy' if net is not None else 'frontier_score_epsilon_greedy',epsilon=a.epsilon)
+report['checkpoint_sha256']=hashlib.sha256(a.checkpoint.read_bytes()).hexdigest() if a.checkpoint else None
 started=time.time()
 deadline=started+a.max_hours*3600
 dataset=open(a.output/'transitions.jsonl','a',buffering=1)
@@ -42,7 +55,11 @@ try:
                 if not len(valid):
                     break
                 best=max(map(int,valid),key=lambda i:info['candidates'][i]['score']/(1+info['candidates'][i]['visits']))
-                action=int(rng.choice(valid)) if rng.random()<.35 else best
+                if net is not None:
+                    with torch.no_grad():
+                        values=net(torch.as_tensor(obs['vector'][None,:],dtype=torch.float32))[0].numpy()
+                    best=int(valid[np.argmax(values[valid])])
+                action=int(rng.choice(valid)) if rng.random()<a.epsilon else best
                 before=info
                 nxt,reward,terminated,truncated,info=env.step(action)
                 report['attempts']+=1
@@ -51,8 +68,9 @@ try:
                     row=dict(episode_id=str(env.session),actor=a.actor,step=step,
                         state=obs['vector'].tolist(),action_mask=obs['action_mask'].tolist(),
                         candidates=before['candidates'],snapshot_id=before['snapshot_id'],action=action,
-                        behavior='frontier_score_epsilon_0.35',
-                        behavior_probability=.35/len(valid)+(.65 if action==best else 0),
+                        behavior=report['behavior'],
+                        behavior_checkpoint_sha256=report['checkpoint_sha256'],
+                        behavior_probability=a.epsilon/len(valid)+((1-a.epsilon) if action==best else 0),
                         reward=reward,reward_terms=info['reward_terms'],next_state=nxt['vector'].tolist(),
                         next_action_mask=nxt['action_mask'].tolist(),next_candidates=info['candidates'],
                         terminated=terminated,truncated=truncated,duration=info['sim_duration'],
@@ -94,3 +112,5 @@ finally:
                     ('time_budget' if time.time()>=deadline else 'worker_error'))
     progress()
     (a.output/'collection_report.json').write_text(json.dumps(report,indent=2))
+if report.get('error'):
+    raise SystemExit(1)

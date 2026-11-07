@@ -16,12 +16,19 @@ def read(path):
 
 def build(root,training_report,output):
     training=read(training_report) if training_report else None
+    if not training_report:
+        completed=sorted(root.rglob('offline_training_report.json'),key=lambda p:p.stat().st_mtime)
+        live=sorted(root.rglob('metrics.jsonl'),key=lambda p:p.stat().st_mtime)
+        if completed and (not live or completed[-1].stat().st_mtime>=live[-1].stat().st_mtime):
+            training=read(completed[-1])
     reports=[v for p in root.rglob('benchmark.json') if (v:=read(p))]
     comparison=summarize(reports)
     data=dict(generated_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        training=training,comparison=comparison,convergence_claim=False)
+        training=training,comparison=comparison,iteration=read(root/'iteration.json'),convergence_claim=False)
+    data['collection']=[dict(actor=v.get('actor'),samples=v.get('samples',0),
+        target=v.get('target_samples',0)) for f in root.glob('collection/actor_*/collector_progress.json') if (v:=read(f))]
     if not training:
-        paths=list(root.rglob('metrics.jsonl'))
+        paths=sorted(root.rglob('metrics.jsonl'),key=lambda p:p.stat().st_mtime)
         if paths:
             metrics=[]
             for line in paths[-1].read_text(encoding='utf-8').splitlines():

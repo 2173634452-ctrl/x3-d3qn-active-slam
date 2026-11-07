@@ -91,6 +91,9 @@ class Learner:
         self.updates+=1
         if self.updates%self.target_interval==0:
             self.target.load_state_dict(self.online.state_dict())
-        return dict(update=self.updates,loss=float(loss.detach()),value_grad_norm=value_grad,
+        td=(prediction.detach()-target).abs()
+        return dict(update=self.updates,loss=float(loss.detach()),td_abs_mean=float(td.mean()),
+            q_mean=float(prediction.detach().mean()),q_abs_max=float(prediction.detach().abs().max()),
+            target_mean=float(target.mean()),value_grad_norm=value_grad,
             advantage_grad_norm=advantage_grad,batch_shape=list(x.shape),
             target_requires_grad=target.requires_grad)

@@ -30,7 +30,7 @@ class PipelineTests(unittest.TestCase):
             with patch('sys.argv', ['pipeline.py', '--output', str(output), '--actors', '2']), patch.object(pipeline, 'run', fake_run):
                 pipeline.main()
             self.assertEqual(len(set(domains)), 2)
-            self.assertEqual(calls, ['train_offline.py', 'evaluate_checkpoint.py'])
+            self.assertEqual(calls, ['train_offline.py', 'evaluate_suite.py'])
             state = json.loads((output / 'pipeline.json').read_text())
             self.assertTrue(state['completed'])
             self.assertEqual(state['samples'], 16)

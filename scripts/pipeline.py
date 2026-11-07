@@ -27,6 +27,9 @@ def main():
     parser.add_argument('--max-hours', type=float, default=8)
     parser.add_argument('--updates', type=int, default=10000)
     parser.add_argument('--resume', type=Path)
+    parser.add_argument('--eval-seeds', type=int, nargs='+', default=[11,22,33])
+    parser.add_argument('--eval-decisions', type=int, default=6)
+    parser.add_argument('--checkpoint-every', type=int, default=2500)
     args = parser.parse_args()
     if args.samples_per_actor < 8 or args.updates < 1 or args.max_hours <= 0:
         parser.error('Require >=8 samples per actor, positive updates and hours')
@@ -41,6 +44,11 @@ def main():
         temp.replace(args.output / 'pipeline.json')
 
     status()
+    monitor_log=open(args.output/'monitor.log','w')
+    watcher=subprocess.Popen([sys.executable,str(ROOT/'learning/build_dashboard.py'),
+        '--root',str(args.output),'--training-report',str(args.output/'offline/offline_training_report.json'),
+        '--output',str(args.output/'monitor'),'--watch-seconds','5'],
+        stdout=monitor_log,stderr=subprocess.STDOUT)
     try:
         def collect(actor):
             run('collect_long.py', '--output', args.output / f'actor_{actor}',
@@ -65,18 +73,33 @@ def main():
         status()
         resume = ['--resume', args.resume] if args.resume else []
         run('train_offline.py', '--dataset', dataset, '--output', args.output / 'offline',
-            '--updates', args.updates, *resume)
+            '--updates', args.updates, '--checkpoint-every',args.checkpoint_every,
+            '--eval-decisions',args.eval_decisions,'--eval-seeds',*args.eval_seeds,*resume)
         state['phase'] = 'evaluation'
         status()
-        run('evaluate_checkpoint.py', '--checkpoint', args.output / 'offline/d3qn_offline.pt',
-            '--output', args.output / 'evaluation')
+        run('evaluate_suite.py', '--checkpoint', args.output / 'offline/d3qn_offline.pt',
+            '--output', args.output / 'evaluation','--seeds',*args.eval_seeds,
+            '--decisions',args.eval_decisions,'--workers',1)
         state.update(phase='finished', completed=True)
     except BaseException as error:
         state.update(phase='failed', error=str(error))
         raise
     finally:
+        watcher.terminate()
+        try:
+            watcher.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            watcher.kill()
+            watcher.wait()
+        monitor_log.close()
         state['finished'] = time.time()
         status()
+        monitor=subprocess.run([sys.executable,str(ROOT/'learning/build_dashboard.py'),
+            '--root',str(args.output),'--training-report',str(args.output/'offline/offline_training_report.json'),
+            '--output',str(args.output/'monitor')],check=False)
+        if monitor.returncode:
+            state['monitor_error']='Dashboard generation failed; raw metrics retained'
+            status()
 
 
 if __name__ == '__main__':

@@ -81,6 +81,10 @@ bash scripts/container.sh python3 learning/train_offline.py \
 
 `--resume` 载入策略并恢复更新计数，但优化器状态和目标网络滞后状态不会完整恢复，不能视为严格续训。长程探索使用 `learning/explore_full.py`，需显式设置 `X3_VIEW_ROOT` 为已有可写目录；`learning/record_simulation.py` / `live.html` 提供可选预览组件，统一入口默认不启动预览服务。
 
+## 训练监控与效果比较
+
+统一入口现已默认启用每2500次更新的独立仿真验证、初始与中间检查点保留、训练后四组策略对照，以及 `monitor/index.html` 曲线报告。记录 loss、TD 误差、Q 值、梯度，展示独立评估回报、面积、导航成功率和中断次数。验证会增加流程耗时；不会用 loss 下降或更新次数宣称收敛。具体运行方式、统计口径和最佳模型选择见 [评估说明](docs/evaluation.md)。
+
 ## 当前边界
 
 - 固定数据训练属于 D3QN 预训练，没有 CQL 等保守离线 RL 机制；训练损失下降不等于探索能力收敛。

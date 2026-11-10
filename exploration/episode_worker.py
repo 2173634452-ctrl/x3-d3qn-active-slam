@@ -139,16 +139,18 @@ class Worker(Node):
         return value.status == 4 and len(value.result.path.poses) > 1
 
     def build_observation(self):
+        epoch = tuple(self.adapter['epoch'])
         self.table, diagnostics = candidates(self.data,self.origin,self.res,self.base,self.yaw)
         self.table = [entry for entry in self.table if self.plan_valid(entry)]
         for entry in self.table:
             entry['visits'] = int(sum(np.linalg.norm(np.array(entry['goal'])-g) < .35 for g in self.recent_goals))
         obs = observation(self.base,self.q,self.yaw,self.table)
         obs = {key:value.tolist() for key,value in obs.items()}
-        payload = dict(obs=obs,candidates=self.table,epoch=self.adapter['epoch'],steps=self.steps)
+        payload = dict(obs=obs,candidates=self.table,epoch=epoch,steps=self.steps)
+        self.snapshot_epoch = tuple(payload['epoch'])
         self.snapshot = hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()[:16]
         return obs, dict(snapshot_id=self.snapshot,candidates=self.table,frontier=diagnostics,
-            epoch=self.adapter['epoch'],step=self.steps,sim_time=self.sim(),paused=self.paused,
+            epoch=list(epoch),step=self.steps,sim_time=self.sim(),paused=self.paused,
             ever_free_m2=float(self.ever_free.sum()*self.res*self.res),
             base=self.base.tolist(),valid_transition=True,
             session=self.out.name,observation_source='ORB + RGB-D belief only')
@@ -184,21 +186,24 @@ class Worker(Node):
                 reason='invalid_action',valid_transition=True,step=self.steps,sim_duration=0.,
                 candidates=self.table,reward_terms=dict(new_free_m2=0.,time_penalty=0.,failure_penalty=.5)))
         entry = self.table[action].copy()
+        expected_epoch = self.snapshot_epoch
+        def revised():
+            return tuple(self.adapter['epoch']) != expected_epoch
         before = float(self.ever_free.sum()*self.res*self.res)
         t0 = self.sim()
         self.pause(False)
         warm = self.sim()
-        self.wait(lambda:self.adapter['invalidated'] or (
+        self.wait(lambda:revised() or self.adapter['invalidated'] or (
             self.adapter['healthy'] and self.sim()-warm >= .35),8,'sensor refresh timeout')
-        result = 'map_invalidated' if self.adapter['invalidated'] else None
-        self.nav_seq += 1
+        result = 'map_invalidated' if revised() or self.adapter['invalidated'] else None
         start_events = len(self.events)
         if result is None:
+            self.nav_seq += 1
             self.goal_pub.publish(self.pose(entry['goal'],entry['yaw']))
             deadline = time.monotonic()+100
             while time.monotonic() < deadline:
                 self.spin()
-                if self.adapter['invalidated']:
+                if revised() or self.adapter['invalidated']:
                     result = 'map_invalidated'
                     break
                 for event in self.events[start_events:]:
@@ -216,14 +221,23 @@ class Worker(Node):
         if result != 'map_invalidated':
             t = self.sim()
             self.wait(lambda:self.sim()-t >= .7,5,'post-action map settling timeout')
+        if self.adapter['invalidated'] and not revised():
+            # A corrected pose can arrive before its revision metadata.
+            until = time.monotonic()+3
+            while not revised() and time.monotonic() < until:
+                self.spin()
+        if revised() and self.adapter['epoch'][0] == expected_epoch[0]:
+            recovered = self.resume_after_revision(expected_epoch)
+            if recovered is not None:
+                return recovered
         self.pause(True)
         duration = self.sim()-t0
         sensor_bad = not self.adapter['healthy']
-        if self.adapter['invalidated'] or sensor_bad:
+        if revised() or self.adapter['invalidated'] or sensor_bad:
             # No old/new-map replay pair is presented as a valid learning sample.
             obs = dict(vector=[0.]*36,action_mask=[0]*10)
             return dict(observation=obs,reward=0.,terminated=False,truncated=True,
-                info=dict(reason='slam_map_revision' if self.adapter['invalidated'] else 'tracking_or_sensor_lost',valid_transition=False,
+                info=dict(reason='slam_map_revision' if revised() or self.adapter['invalidated'] else 'tracking_or_sensor_lost',valid_transition=False,
                           epoch=self.adapter['epoch'],snapshot_id=self.snapshot,
                           result=result,step=self.steps))
         gain = max(0.,float(self.ever_free.sum()*self.res*self.res)-before)
@@ -238,6 +252,36 @@ class Worker(Node):
         self.trace.write(json.dumps(dict(action=action,reward=reward,info=info))+'\n')
         return dict(observation=obs,reward=reward,terminated=no_frontier,
                     truncated=not no_frontier and self.steps >= self.max_steps,info=info)
+
+    def resume_after_revision(self, previous_epoch):
+        # Leave simulation running while ORB publishes corrected anchors and Nav2 cancels.
+        deadline = time.monotonic()+32
+        while time.monotonic() < deadline:
+            state = self.adapter
+            if state['epoch'][0] != previous_epoch[0]:
+                return None
+            if (state.get('rebuilt_epoch') == state['epoch'] and state['healthy']
+                    and state.get('navigation_idle')):
+                epoch = tuple(state['epoch'])
+                self.ever_free = None
+                self.recent_goals.clear()
+                target = self.sim()+1.
+                while self.sim() < target and time.monotonic() < deadline:
+                    self.spin()
+                if tuple(self.adapter['epoch']) != epoch or not self.adapter['healthy']:
+                    continue
+                if self.ever_free is None:
+                    continue
+                self.pause(True)
+                obs, info = self.build_observation()
+                info.update(reason='slam_map_recovered', result='map_revision_canceled',
+                    valid_transition=False, previous_epoch=list(previous_epoch))
+                return dict(observation=obs,reward=0.,terminated=not any(obs['action_mask']),
+                    truncated=self.steps >= self.max_steps,info=info)
+            if (self.out/'episode_close.json').exists():
+                return None
+            self.spin()
+        return None
 
     def run(self):
         self.initial()

@@ -1,7 +1,7 @@
 # 数据和网络接口
 
 1. Gazebo 发布 RGB、深度、CameraInfo。`runtime/rgbd_node.cpp` 将图像交给 ORB-SLAM3，发布估计位姿、跟踪状态等；`prepare_runtime.py` 生成带 `/slam/map_epoch` 的封装，字段为当前 map ID 和 big-change 索引。
-2. `base_navigation.py` / `exploration_bridge.py` 将相机位姿转换成车体位姿，同步深度并投影到自由/障碍/未知栅格。跟踪不健康时阻断速度命令；地图版本变化使旧目标失效。
+2. `base_navigation.py` / `exploration_bridge.py` 将相机位姿转换成车体位姿，同步深度并投影到自由/障碍/未知栅格。地图版本变化时取消旧目标。同一地图内，运行节点通过 `/slam/map_anchors` 发布带地图版本、关键帧 ID 和采集时间的位姿快照。栅格按保留的深度观测相对于附近关键帧的位姿重建。旧动作跨越修正时，其转移不进入训练数据。该方法以关键帧局部刚性变换近似非关键帧的修正，最多保留 3,000 帧已积分的深度观测，缺少存活锚点的观测不参与重放。
 3. `frontiers.py` 找自由区与未知区边界，构造安全接近点、检查连通性；`episode_worker.py` 调用 Nav2 规划检查可达性。保留最多10个候选；不足时填零并用动作掩码屏蔽。
 4. 状态为 `float32[36]`：归一化车体 xy 共2维、四元数4维、10个候选的车体相对 xy 共20维、候选局部未知面积收益代理10维；掩码 `int8[10]`。它不包含论文完整 D-optimality 指标。
 5. 网络输入 `[B,36]`，共享层 `36→128 ReLU→64 ReLU`；V 分支 `64→32 ReLU→1`，A 分支 `64→32 ReLU→10`；输出 `Q=V+A-mean(A,dim=-1)`，共17,515参数。非法动作在选最大值前屏蔽。

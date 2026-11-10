@@ -176,6 +176,16 @@ class NavigationBridge(Node):
         # Optical right/down/forward -> camera forward/left/up, same S as ORB wrapper.
         local = np.column_stack((d, -(u-self.k[0, 2])*d/self.k[0, 0],
                                  -(v-self.k[1, 2])*d/self.k[1, 1]))
+        self.integrate_scan(local, cam, rot)
+        self.remember_scan(t, local, cam, rot)
+        self.last_depth_stamp = t
+        self.depth_wall = time.monotonic()
+        self.map_frames += 1
+
+    def remember_scan(self, stamp, points, camera, rotation):
+        """Hook for a mapper that retains scans for pose correction."""
+
+    def integrate_scan(self, local, cam, rot):
         pts = local @ rot.T + cam
         base = cam - rot @ np.array([.057105, .000017948, .11905])
         # A low camera cannot detect every overhang. This slab is for X3's current
@@ -200,9 +210,6 @@ class NavigationBridge(Node):
         self.odds[(free > 0) & (occupied == 0)] -= .35
         self.odds[occupied > 0] += 1.1
         np.clip(self.odds, -3, 3, out=self.odds)
-        self.last_depth_stamp = t
-        self.depth_wall = time.monotonic()
-        self.map_frames += 1
 
     def publish_map(self):
         if self.initial_base is None:

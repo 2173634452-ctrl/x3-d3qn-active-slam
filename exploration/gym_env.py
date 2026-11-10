@@ -58,7 +58,7 @@ class X3ExplorationEnv(gym.Env):
         self.session = self.root/f'episode_{self.episode:03d}_{uuid.uuid4().hex[:8]}'
         env = dict(os.environ, ROS_DOMAIN_ID=str(int(os.environ.get('X3_ROS_DOMAIN_BASE','190'))+self.episode%10),
                    IGN_PARTITION='explorb_'+self.session.name,
-                   X3_HEADLESS='1',X3_SLAM_BINARY='/results/exploration/runtime/build/x3_rgbd',
+                   X3_HEADLESS='1',X3_SLAM_BINARY=os.environ.get('X3_SLAM_BINARY','/results/exploration/runtime/build/x3_rgbd'),
                    X3_VOCAB='/workspace/x3-slam/Vocabulary/ORBvoc.txt',
                    EXPLORATION_MAX_STEPS=str(self.max_steps))
         self.log = open(self.root/(self.session.name+'.log'),'w')
@@ -79,7 +79,7 @@ class X3ExplorationEnv(gym.Env):
         tmp = protocol/f'request_{self.request:04d}.tmp'
         tmp.write_text(json.dumps(dict(snapshot_id=self.info['snapshot_id'],**payload)))
         tmp.replace(protocol/f'request_{self.request:04d}.json')
-        response = self._read_until(protocol/f'response_{self.request:04d}.json',125)
+        response = self._read_until(protocol/f'response_{self.request:04d}.json',165)
         self.info = response['info']
         self.needs_reset = response['terminated'] or response['truncated']
         return (self._observation(response['observation']),float(response['reward']),
